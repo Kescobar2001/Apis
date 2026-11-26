@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Productos | KimTecno</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-body-tertiary">
+
+<nav class="navbar navbar-dark bg-primary mb-4">
+  <div class="container">
+    <span class="navbar-brand fw-bold mb-0 h1">KimTecno · Productos</span>
+    <button class="btn btn-light" id="btnNuevo">Nuevo producto</button>
+  </div>
+</nav>
+
+<main class="container pb-5">
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-12 col-md">
+          <input id="buscarId" class="form-control" placeholder="Buscar por ID de producto">
+        </div>
+        <div class="col-6 col-md-auto d-grid">
+          <button class="btn btn-outline-primary" id="btnBuscar">Buscar </button>
+        </div>
+        <div class="col-6 col-md-auto d-grid">
+          <button class="btn btn-primary" id="btnTodos">Ver todos</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+      <span>Lista de productos</span>
+      <span class="badge text-bg-secondary" id="contador">0</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Producto</th><th>Empresa</th>
+            <th class="text-end">Precio</th><th class="text-end">Stock</th><th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="accordion" id="acordeon">
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelLog">
+            Consumiendo API...
+        </button>
+      </h2>
+      <div id="panelLog" class="accordion-collapse collapse" data-bs-parent="#acordeon">
+        <ul class="list-group list-group-flush" id="log">
+          <li class="list-group-item text-body-secondary">Aquí aparece cada petición GET, POST, PUT y DELETE.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal crear / editar -->
+<div class="modal fade" id="modalForm" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content needs-validation" id="form" novalidate>
+      <div class="modal-header">
+        <h5 class="modal-title" id="formTitulo">Nuevo producto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="id">
+      
+        <div class="mb-3">
+          <label for="nombre" class="form-label">Nombre</label>
+          <input id="nombre" class="form-control" required>
+          <div class="invalid-feedback">El nombre es obligatorio.</div>
+        </div>
+        <div class="row">
+          <div class="col-6 mb-3">
+            <label for="precio" class="form-label">Precio ($)</label>
+            <input id="precio" type="number" step="0.01" min="0" class="form-control" required>
+            <div class="invalid-feedback">Ingresa un precio válido.</div>
+          </div>
+          <div class="col-6 mb-3">
+            <label for="stock" class="form-label">Stock</label>
+            <input id="stock" type="number" min="0" value="0" class="form-control">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="imagen" class="form-label">URL de la imagen</label>
+          <input id="imagen" type="url" class="form-control" placeholder="https://ejemplo.com/foto.jpg">
+          <div class="invalid-feedback">Ingresa una URL válida (https://...).</div>
+          <img id="previa" class="img-thumbnail mt-2 d-none" style="max-height:120px" alt="Vista previa">
+          </div>
+        <div class="mb-1">
+          <label for="descripcion" class="form-label">Descripción</label>
+          <textarea id="descripcion" rows="3" class="form-control"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="btnGuardar">Guardar producto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal eliminar -->
+<div class="modal fade" id="modalBorrar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Eliminar producto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+      <div class="modal-body">¿Eliminar <strong id="borrarNombre"></strong>? Esta acción no se puede deshacer.</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmarBorrar">Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Avisos -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="toast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body" id="toastTexto"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const BASE = location.port === '3000' ? '' : 'http://localhost:3000';
+const API_PRODUCTOS = BASE + '/api/productos';
+
+const $ = id => document.getElementById(id);
+const modalForm = new bootstrap.Modal($('modalForm'));
+const modalBorrar = new bootstrap.Modal($('modalBorrar'));
+const toast = new bootstrap.Toast($('toast'), { delay: 3500 });
+let productos = [];
+let idPorBorrar = '';
+
+const IMG_VACIA = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#dee2e6"/><text x="50%" y="55%" font-size="11" text-anchor="middle" fill="#6c757d">Sin foto</text></svg>'
+);
+
+if (matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-bs-theme', 'dark');
+
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function aviso(texto, ok = true){
+  $('toast').className = 'toast align-items-center border-0 text-bg-' + (ok ? 'success' : 'danger');
+  $('toastTexto').textContent = texto;
+  toast.show();
+}
+
+function textoError(d, f){
+  if (!d) return f;
+  if (Array.isArray(d.error)) return d.error.join('. ');
+  return d.msg || d.message || f;
+}
+
+const colores = { GET: 'primary', POST: 'success', PUT: 'warning', DELETE: 'danger' };
+function registrar(metodo, url, estado){
+  const log = $('log');
+  if (!log.dataset.activo){ log.innerHTML = ''; log.dataset.activo = '1'; }
+  const li = document.createElement('li');
+  li.className = 'list-group-item d-flex gap-3 align-items-center';
+  li.innerHTML = `<span class="badge text-bg-${colores[metodo]}" style="min-width:68px">${metodo}</span><span class="flex-grow-1">${esc(url.replace(BASE, ''))}</span><span class="text-body-secondary">${estado}</span>`;
+  log.prepend(li);
+}
+
+async function pedir(url, opciones){
+  const r = await fetch(url, opciones);
+  let data = null;
+  try { data = await r.json(); } catch (e) {}
+  registrar((opciones && opciones.method) || 'GET', url, r.status);
+  return { ok: r.ok, status: r.status, data };
+}
+
+async function cargarProductos(){
+  try{
+    const r = await pedir(API_PRODUCTOS);
+    if (r.status === 404) productos = [];
+    else if (r.ok) productos = r.data.productos || [];
+    else { aviso(textoError(r.data, 'Error al obtener los productos'), false); return; }
+    pintar(productos);
+  }catch(e){
+    aviso('No se pudo conectar con la API. Verifica que el servidor esté encendido.', false);
+  }
+}
+
+async function buscarPorId(){
+  const id = $('buscarId').value.trim();
+  if (!id) return cargarProductos();
+  const r = await pedir(`${API_PRODUCTOS}/${id}`);
+  if (!r.ok){ aviso(textoError(r.data, 'No se encontró el producto'), false); return; }
+  pintar([r.data.producto]);
+}
+
+function pintar(lista){
+  $('contador').textContent = lista.length;
+  if (!lista.length){
+    $('tabla').innerHTML = '<tr><td colspan="5" class="text-center text-body-secondary py-4">Aún no hay productos. Usa "Nuevo producto" para crear el primero.</td></tr>';
+    return;
+  }
+  $('tabla').innerHTML = lista.map(p => `
+    <tr>
+      <td>
+        <div class="d-flex gap-3 align-items-center">
+          <img src="${esc(p.imagen || IMG_VACIA)}" alt="${esc(p.nombre)}" width="64" height="64"
+               class="rounded border object-fit-cover flex-shrink-0" loading="lazy"
+               onerror="this.onerror=null;this.src=IMG_VACIA">
+          <div>
+            <div class="fw-semibold">${esc(p.nombre)}</div>
+            <div class="small text-body-secondary">${esc(p.descripcion)}</div>
+            <div class="small text-body-secondary">ID: ${p._id}</div>
+          </div>
+        </div>
+      </td>
+      <td>${esc(p.empresa && p.empresa.nombre ? p.empresa.nombre : '—')}</td>
+      <td class="text-end">$${Number(p.precio).toFixed(2)}</td>
+      <td class="text-end"><span class="badge text-bg-${(p.stock ?? 0) > 5 ? 'success' : 'warning'}">${p.stock ?? 0}</span></td>
+      <td class="text-end text-nowrap">
+        <button class="btn btn-sm btn-outline-warning" data-edit="${p._id}">Editar </button>
+        <button class="btn btn-sm btn-outline-danger" data-del="${p._id}">Eliminar</button>
+      </td>
+    </tr>`).join('');
+}
+
+function abrirForm(p){
+  $('form').classList.remove('was-validated');
+  $('form').reset();
+  $('previa').classList.add('d-none');
+  $('id').value = p ? p._id : '';
+  $('formTitulo').textContent = p ? 'Editar producto' : 'Nuevo producto';
+  $('btnGuardar').textContent = p ? 'Guardar cambios' : 'Guardar producto ';
+  if (p){
+    $('nombre').value = p.nombre;
+    $('precio').value = p.precio;
+    $('stock').value = p.stock ?? 0;
+    $('descripcion').value = p.descripcion || '';
+    $('imagen').value = p.imagen || '';
+    $('imagen').dispatchEvent(new Event('input'));
+  }
+  modalForm.show();
+}
+
+$('btnNuevo').addEventListener('click', () => abrirForm(null));
+
+
+$('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!$('form').checkValidity()){ $('form').classList.add('was-validated'); return; }
+  const id = $('id').value;
+  const body = {
+    nombre: $('nombre').value.trim(),
+    precio: Number($('precio').value),
+    stock: Number($('stock').value || 0),
+    descripcion: $('descripcion').value.trim(),
+    imagen: $('imagen').value.trim()
+  };
+  try{
+    const r = await pedir(id ? `${API_PRODUCTOS}/${id}` : API_PRODUCTOS, {
+      method: id ? 'PUT' : 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    if (!r.ok){ aviso(textoError(r.data, 'No se pudo guardar el producto'), false); return; }
+    modalForm.hide();
+    aviso(r.data.msg || 'Producto guardado correctamente');
+    cargarProductos();
+  }catch(err){ aviso('No se pudo conectar con la API.', false); }
+});
+
+/* Editar y pedir confirmación para DELETE */
+$('tabla').addEventListener('click', e => {
+  const idEditar = e.target.dataset.edit, idBorrar = e.target.dataset.del;
+  if (idEditar) abrirForm(productos.find(x => x._id === idEditar));
+  if (idBorrar){
+    const p = productos.find(x => x._id === idBorrar);
+    idPorBorrar = idBorrar;
+    $('borrarNombre').textContent = p ? p.nombre : 'este producto';
+    modalBorrar.show();
+  }
+});
+
+$('btnConfirmarBorrar').addEventListener('click', async () => {
+  const r = await pedir(`${API_PRODUCTOS}/${idPorBorrar}`, {method: 'DELETE'});
+  modalBorrar.hide();
+  if (!r.ok){ aviso(textoError(r.data, 'No se pudo eliminar el producto'), false); return; }
+  aviso(r.data.msg || 'Producto eliminado correctamente');
+  cargarProductos();
+});
+
+$('btnBuscar').addEventListener('click', buscarPorId);
+$('btnTodos').addEventListener('click', () => { $('buscarId').value = ''; cargarProductos(); });
+
+/* Vista previa en vivo de la imagen */
+$('imagen').addEventListener('input', () => {
+  const url = $('imagen').value.trim();
+  const previa = $('previa');
+  if (!url){ previa.classList.add('d-none'); return; }
+  previa.src = url;
+  previa.classList.remove('d-none');
+});
+$('previa').addEventListener('error', () => $('previa').classList.add('d-none'));
+
+cargarProductos();
+</script>
+</body>
+</html>

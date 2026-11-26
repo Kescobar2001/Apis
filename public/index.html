@@ -1,0 +1,318 @@
+<!--DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Productos</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-body-tertiary">
+
+<nav class="navbar navbar-dark bg-primary mb-4">
+  <div class="container">
+    <span class="navbar-brand fw-bold mb-0 h1">Productos</span>
+    <button class="btn btn-light" id="btnNuevo">Nuevo producto (POST)</button>
+  </div>
+</nav>
+
+<main class="container pb-5">
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-12 col-md">
+          <input id="buscarId" class="form-control" placeholder="Buscar por ID de producto">
+        </div>
+        <div class="col-6 col-md-auto d-grid">
+          <button class="btn btn-outline-primary" id="btnBuscar">Buscar (GET)</button>
+        </div>
+        <div class="col-6 col-md-auto d-grid">
+          <button class="btn btn-primary" id="btnTodos">Ver todos (GET)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h5 mb-0">Lista de productos</h2>
+    <span class="badge text-bg-secondary" id="contador">0</span>
+  </div>
+
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4 mb-4" id="galeria"></div>
+
+  <div class="accordion" id="acordeon">
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelLog">
+          Peticiones enviadas a la API
+        </button>
+      </h2>
+      <div id="panelLog" class="accordion-collapse collapse" data-bs-parent="#acordeon">
+        <ul class="list-group list-group-flush" id="log">
+          <li class="list-group-item text-body-secondary">Aquí aparece cada petición GET, POST, PUT y DELETE.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal crear / editar -->
+<div class="modal fade" id="modalForm" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" id="form" novalidate>
+      <div class="modal-header">
+        <h5 class="modal-title" id="formTitulo">Nuevo producto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="id">
+        <div class="mb-3">
+          <label for="nombre" class="form-label">Nombre</label>
+          <input id="nombre" class="form-control" required>
+          <div class="invalid-feedback">El nombre es obligatorio.</div>
+        </div>
+        <div class="mb-3">
+          <label for="descripcion" class="form-label">Descripción</label>
+          <textarea id="descripcion" rows="2" class="form-control"></textarea>
+        </div>
+        <div class="row">
+          <div class="col-6 mb-3">
+            <label for="precio" class="form-label">Precio ($)</label>
+            <input id="precio" type="number" step="0.01" min="0" class="form-control" required>
+            <div class="invalid-feedback">Ingresa un precio válido.</div>
+          </div>
+          <div class="col-6 mb-3">
+            <label for="stock" class="form-label">Stock</label>
+            <input id="stock" type="number" min="0" class="form-control" required>
+            <div class="invalid-feedback">Ingresa el stock.</div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="etiquetas" class="form-label">Etiquetas</label>
+          <input id="etiquetas" class="form-control" placeholder="monitor, oferta, nuevo">
+          <div class="form-text">Sepáralas con comas.</div>
+        </div>
+        <div class="mb-1">
+          <label for="imagen" class="form-label">Dirección (URL) de la imagen</label>
+          <input id="imagen" type="url" class="form-control" placeholder="https://ejemplo.com/foto.jpg">
+          <div class="invalid-feedback">Escribe una URL válida que empiece con https://</div>
+          <img id="vista" class="img-thumbnail mt-2 d-none" style="max-height:140px" alt="Vista previa">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="btnGuardar">Guardar producto (POST)</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal eliminar -->
+<div class="modal fade" id="modalBorrar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Eliminar producto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+      <div class="modal-body">¿Eliminar <strong id="borrarNombre"></strong>? Esta acción no se puede deshacer.</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmarBorrar">Eliminar (DELETE)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Avisos -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="toast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body" id="toastTexto"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const BASE = location.port === '3000' ? '' : 'http://localhost:3000';
+const API = BASE + '/api/productos';
+
+// Imagen gris que se muestra si el producto no tiene foto o la URL no carga
+const SIN_FOTO = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="100%" height="100%" fill="#dee2e6"/>' +
+  '<text x="50%" y="50%" fill="#6c757d" font-family="Arial" font-size="20" text-anchor="middle" dominant-baseline="middle">Sin foto</text></svg>');
+
+const $ = id => document.getElementById(id);
+const modalForm = new bootstrap.Modal($('modalForm'));
+const modalBorrar = new bootstrap.Modal($('modalBorrar'));
+const toast = new bootstrap.Toast($('toast'), { delay: 3500 });
+let productos = [];
+let idPorBorrar = '';
+
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function aviso(texto, ok = true){
+  $('toast').className = 'toast align-items-center border-0 text-bg-' + (ok ? 'success' : 'danger');
+  $('toastTexto').textContent = texto;
+  toast.show();
+}
+
+function textoError(d, f){
+  if (!d) return f;
+  if (Array.isArray(d.error)) return d.error.join('. ');
+  return d.msg || d.message || f;
+}
+
+const colores = { GET: 'primary', POST: 'success', PUT: 'warning', DELETE: 'danger' };
+function registrar(metodo, url, estado){
+  const log = $('log');
+  if (!log.dataset.activo){ log.innerHTML = ''; log.dataset.activo = '1'; }
+  const li = document.createElement('li');
+  li.className = 'list-group-item d-flex gap-3 align-items-center';
+  li.innerHTML = `<span class="badge text-bg-${colores[metodo]}" style="min-width:68px">${metodo}</span><span class="flex-grow-1">${esc(url.replace(BASE, ''))}</span><span class="text-body-secondary">${estado}</span>`;
+  log.prepend(li);
+}
+
+async function pedir(url, opciones){
+  const r = await fetch(url, opciones);
+  let data = null;
+  try { data = await r.json(); } catch (e) {}
+  registrar((opciones && opciones.method) || 'GET', url, r.status);
+  return { ok: r.ok, status: r.status, data };
+}
+
+/* GET todos */
+async function cargarProductos(){
+  try{
+    const r = await pedir(API);
+    if (r.status === 404) productos = [];
+    else if (r.ok) productos = r.data.productos || [];
+    else { aviso(textoError(r.data, 'Error al obtener los productos'), false); return; }
+    pintar(productos);
+  }catch(e){
+    aviso('No se pudo conectar con la API. Verifica que el servidor esté encendido.', false);
+  }
+}
+
+/* GET por ID */
+async function buscarPorId(){
+  const id = $('buscarId').value.trim();
+  if (!id) return cargarProductos();
+  const r = await pedir(`${API}/${id}`);
+  if (!r.ok){ aviso(textoError(r.data, 'No se encontró el producto'), false); return; }
+  pintar([r.data.producto]);
+}
+
+function pintar(lista){
+  $('contador').textContent = lista.length;
+  if (!lista.length){
+    $('galeria').innerHTML = '<div class="col-12"><div class="text-center text-body-secondary py-5">Aún no hay productos. Usa "Nuevo producto" para crear el primero.</div></div>';
+    return;
+  }
+  $('galeria').innerHTML = lista.map(p => `
+    <div class="col">
+      <div class="card h-100 shadow-sm">
+        <img src="${esc(p.imagen || SIN_FOTO)}" class="card-img-top" alt="${esc(p.nombre)}"
+             style="height:200px;object-fit:cover" onerror="this.onerror=null;this.src=SIN_FOTO">
+        <div class="card-body">
+          <h5 class="card-title mb-1">${esc(p.nombre)}</h5>
+          <p class="card-text text-body-secondary small mb-2">${esc(p.descripcion)}</p>
+          <div class="mb-2">${(p.etiquetas || []).map(t => `<span class="badge text-bg-info me-1">${esc(t)}</span>`).join('')}</div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fs-5 fw-semibold">$${Number(p.precio).toFixed(2)}</span>
+            <span class="badge text-bg-${(p.stock ?? 0) > 5 ? 'success' : 'warning'}">Stock: ${p.stock ?? 0}</span>
+          </div>
+          <div class="small text-body-secondary mt-2">ID: ${p._id}</div>
+        </div>
+        <div class="card-footer d-flex gap-2">
+          <button class="btn btn-sm btn-outline-warning flex-fill" data-edit="${p._id}">Editar (PUT)</button>
+          <button class="btn btn-sm btn-outline-danger flex-fill" data-del="${p._id}">Eliminar (DELETE)</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* Vista previa al escribir la URL */
+$('imagen').addEventListener('input', () => {
+  const url = $('imagen').value.trim();
+  if (url){ $('vista').src = url; $('vista').classList.remove('d-none'); }
+  else $('vista').classList.add('d-none');
+});
+$('vista').addEventListener('error', () => $('vista').classList.add('d-none'));
+
+/* Abrir formulario */
+function abrirForm(p){
+  $('form').classList.remove('was-validated');
+  $('form').reset();
+  $('vista').classList.add('d-none');
+  $('id').value = p ? p._id : '';
+  $('formTitulo').textContent = p ? 'Editar producto' : 'Nuevo producto';
+  $('btnGuardar').textContent = p ? 'Guardar cambios (PUT)' : 'Guardar producto (POST)';
+  if (p){
+    $('nombre').value = p.nombre;
+    $('descripcion').value = p.descripcion || '';
+    $('precio').value = p.precio;
+    $('stock').value = p.stock ?? 0;
+    $('etiquetas').value = (p.etiquetas || []).join(', ');
+    $('imagen').value = p.imagen || '';
+    if (p.imagen){ $('vista').src = p.imagen; $('vista').classList.remove('d-none'); }
+  }
+  modalForm.show();
+}
+
+$('btnNuevo').addEventListener('click', () => abrirForm(null));
+
+/* POST y PUT */
+$('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!$('form').checkValidity()){ $('form').classList.add('was-validated'); return; }
+  const id = $('id').value;
+  const body = {
+    nombre: $('nombre').value.trim(),
+    descripcion: $('descripcion').value.trim(),
+    precio: Number($('precio').value),
+    stock: Number($('stock').value),
+    etiquetas: $('etiquetas').value.split(',').map(t => t.trim()).filter(Boolean),
+    imagen: $('imagen').value.trim()
+  };
+  try{
+    const r = await pedir(id ? `${API}/${id}` : API, {
+      method: id ? 'PUT' : 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    if (!r.ok){ aviso(textoError(r.data, 'No se pudo guardar el producto'), false); return; }
+    modalForm.hide();
+    aviso(r.data.msg || 'Producto guardado correctamente');
+    cargarProductos();
+  }catch(err){ aviso('No se pudo conectar con la API.', false); }
+});
+
+/* Editar y confirmar DELETE */
+$('galeria').addEventListener('click', e => {
+  const idEditar = e.target.dataset.edit, idBorrar = e.target.dataset.del;
+  if (idEditar) abrirForm(productos.find(x => x._id === idEditar));
+  if (idBorrar){
+    const p = productos.find(x => x._id === idBorrar);
+    idPorBorrar = idBorrar;
+    $('borrarNombre').textContent = p ? p.nombre : 'este producto';
+    modalBorrar.show();
+  }
+});
+
+/* DELETE */
+$('btnConfirmarBorrar').addEventListener('click', async () => {
+  const r = await pedir(`${API}/${idPorBorrar}`, {method: 'DELETE'});
+  modalBorrar.hide();
+  if (!r.ok){ aviso(textoError(r.data, 'No se pudo eliminar el producto'), false); return; }
+  aviso(r.data.msg || 'Producto eliminado correctamente');
+  cargarProductos();
+});
+
+$('btnBuscar').addEventListener('click', buscarPorId);
+$('btnTodos').addEventListener('click', () => { $('buscarId').value = ''; cargarProductos(); });
+
+cargarProductos();
+</script>
+</body>
+</html>-->
